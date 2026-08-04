@@ -428,13 +428,22 @@
   };
 
   function getWave() {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayStr();  // local date, consistent with entry_date
     if (today >= WAVE_CONFIG.baseline.start && today <= WAVE_CONFIG.baseline.end) return 'baseline';
     if (today >= WAVE_CONFIG.high_pressure.start && today <= WAVE_CONFIG.high_pressure.end) return 'high_pressure';
     return 'outside_wave';
   }
 
-  function todayStr() { return new Date().toISOString().slice(0, 10); }
+  // Local date (user's timezone), NOT UTC.
+  // toISOString() returns UTC — for China (UTC+8) users submitting in the
+  // morning, that yields YESTERDAY's date and can collide with last night's
+  // entry via the UNIQUE constraint.
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
 
   // ── Participant ID ───────────────────────────────────────────────
   function startWithId() {
@@ -463,7 +472,7 @@
     const wave = getWave();
     const waveEl = document.getElementById('wave-display');
     if (wave !== 'outside_wave') {
-      waveEl.textContent = WAVE_CONFIG[wave]?.label || wave;
+      waveEl.textContent = (WAVE_CONFIG[wave] && WAVE_CONFIG[wave].label) || wave;
     } else {
       waveEl.style.display = 'none';
       // Show warning banner
@@ -531,7 +540,18 @@
       const s = r.querySelector('.scale-btn.selected');
       d[f] = s ? parseInt(s.dataset.val) : null;
     });
-    d.dream_text_raw = document.getElementById('dream-textarea').value.trim() || null;
+    // Dream text: only include if user says they remember a dream.
+    // (They may have typed text, then changed their answer to "No dreams" —
+    //  the hidden textarea still holds the old text, which must not be sent.)
+    const recall = d.dream_recall || '';
+    const noDream = recall.indexOf('No dreams') === 0;
+    d.dream_text_raw = noDream ? null
+      : (document.getElementById('dream-textarea').value.trim() || null);
+
+    // Same for Q6b: only include categories if Q6 answer is "Yes".
+    const saidYes = (d.unresolved_mind || '').indexOf('Yes') === 0;
+    if (!saidYes) d.unresolved_categories = [];
+
     return d;
   }
 
@@ -574,7 +594,7 @@
         document.getElementById('already-screen').style.display = 'block';
         window.scrollTo(0, 0);
       } else throw new Error(result.error);
-    } catch {
+    } catch (err) {
       btn.disabled = false;
       btn.innerHTML = lang === 'en' ? 'Submit Today\'s Entry' : '提交今天的记录';
       alert(lang === 'en' ? 'Submission failed. Please try again.' : '提交失败，请重试。');
