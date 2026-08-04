@@ -24,8 +24,15 @@ Return exactly:
 {"themes":[],"emotions":[],"tone":"neutral","confidence":0.0,"notes":""}`;
 
   try {
+    // 5s timeout: if DeepSeek is slow, abort and use fallback.
+    // Without this, a slow DeepSeek response can exceed Vercel's 10s
+    // function limit and kill the whole request before data is saved.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+
     const res = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json'
@@ -37,6 +44,7 @@ Return exactly:
         temperature: 0.2
       })
     });
+    clearTimeout(timer);
 
     const data = await res.json();
     const raw = data.choices?.[0]?.message?.content || '';
