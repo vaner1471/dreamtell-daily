@@ -221,7 +221,7 @@
       (r.ai_themes || []).forEach(t => { if (t && t !== 'none') themeCounts[t] = (themeCounts[t]||0)+1; });
     });
     const themesSorted = Object.entries(themeCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    const themeMax = themesSorted[0]?.[1]||1;
+    const themeMax = (themesSorted[0] && themesSorted[0][1]) || 1;
     document.getElementById('chart-themes').innerHTML = themesSorted.length
       ? themesSorted.map(([t,c]) => `
           <div class="bar-row">
@@ -301,7 +301,7 @@
     const rows = [keys.join(',')];
     allData.forEach(r => {
       rows.push(keys.map(k => {
-        const v = Array.isArray(r[k]) ? r[k].join(' | ') : (r[k] ?? '');
+        const v = Array.isArray(r[k]) ? r[k].join(' | ') : (r[k] == null ? '' : r[k]);
         return `"${String(v).replace(/"/g,'""')}"`;
       }).join(','));
     });
