@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DreamTell Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0e0e0e; color: #eee; padding: 24px 16px; }
+    .container { max-width: 760px; margin: 0 auto; }
+
+    h1 { font-size: 22px; font-weight: 700; }
+    .sub { font-size: 12px; color: #444; margin-bottom: 24px; }
+
+    #login-screen { text-align: center; padding: 80px 0; }
+    #login-screen h2 { margin-bottom: 20px; color: #eee; }
+    .input { width: 100%; max-width: 280px; padding: 12px 16px; border: 1.5px solid #333; border-radius: 10px; font-size: 15px; outline: none; margin-bottom: 12px; background: #1a1a1a; color: #fff; }
+    .btn { padding: 12px 28px; background: #fff; color: #0e0e0e; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .btn-sm { padding: 7px 16px; font-size: 12px; border-radius: 8px; }
+    .btn-outline { background: transparent; color: #fff; border: 1.5px solid #444; }
+
+    #dashboard { display: none; }
+    .top-bar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 10px; flex-wrap: wrap; }
+    .actions { display: flex; gap: 8px; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+    .stat-card { background: #141414; border: 1px solid #222; border-radius: 12px; padding: 14px; }
+    .stat-num { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+    .stat-label { font-size: 11px; color: #555; }
+
+    .chart-section { background: #141414; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 8px; }
+    .chart-title { font-size: 12px; font-weight: 700; color: #666; margin-bottom: 12px; letter-spacing: 0.5px; text-transform: uppercase; }
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+
+    .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+    .bar-label { width: 130px; flex-shrink: 0; color: #666; }
+    .bar-wrap { flex: 1; background: #1e1e1e; border-radius: 99px; height: 6px; }
+    .bar-fill { height: 6px; border-radius: 99px; background: #888; }
+    .bar-count { width: 24px; text-align: right; color: #555; font-size: 11px; }
+
+    /* Wave filter */
+    .wave-filter { display: flex; gap: 6px; margin-bottom: 16px; }
+    .wave-btn { padding: 5px 14px; border-radius: 99px; border: 1px solid #333; background: transparent; color: #666; font-size: 12px; cursor: pointer; }
+    .wave-btn.active { border-color: #888; color: #eee; }
+
+    /* Participant table */
+    .section-title { font-size: 13px; font-weight: 700; color: #888; margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .pid-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; margin-bottom: 16px; }
+    .pid-card { background: #141414; border: 1px solid #222; border-radius: 8px; padding: 10px 12px; font-size: 12px; }
+    .pid-id { font-weight: 700; color: #ccc; margin-bottom: 3px; }
+    .pid-count { color: #555; }
+    .pid-last { color: #444; font-size: 10px; }
+
+    /* Dream table */
+    .dream-card { background: #141414; border: 1px solid #222; border-radius: 10px; padding: 12px 14px; margin-bottom: 6px; }
+    .dream-meta { font-size: 11px; color: #444; margin-bottom: 6px; }
+    .dream-text { font-size: 13px; color: #aaa; line-height: 1.5; border-left: 2px solid #2a2a4a; padding-left: 10px; margin-bottom: 8px; }
+    .tag { display: inline-block; background: #1a1a2a; border: 1px solid #2a2a4a; border-radius: 5px; padding: 2px 7px; font-size: 10px; color: #8888cc; margin: 2px; }
+    .tag.tone-pos { border-color: #2a4a2a; background: #1a2a1a; color: #88cc88; }
+    .tag.tone-neg { border-color: #4a2a2a; background: #2a1a1a; color: #cc8888; }
+    .tag.tone-neu { background: #1e1e1e; color: #888; }
+
+    .err { color: #cc4444; font-size: 12px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Login -->
+  <div id="login-screen">
+    <h2>DreamTell Admin</h2>
+    <input class="input" type="password" id="pwd-input" placeholder="Password"
+      onkeydown="if(event.key==='Enter')login()">
+    <br>
+    <button class="btn" onclick="login()">Enter</button>
+    <p class="err" id="login-err"></p>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard">
+    <div class="top-bar">
+      <div>
+        <h1>DreamTell Daily</h1>
+        <div class="sub" id="last-updated">Loading…</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-sm btn-outline" onclick="loadData()">↻ Refresh</button>
+        <button class="btn btn-sm" onclick="exportCSV()">↓ CSV</button>
+      </div>
+    </div>
+
+    <!-- Wave filter -->
+    <div class="wave-filter">
+      <button class="wave-btn active" onclick="setWave('all')">All waves</button>
+      <button class="wave-btn" onclick="setWave('baseline')">Wave 1 · Baseline</button>
+      <button class="wave-btn" onclick="setWave('high_pressure')">Wave 2 · High Pressure</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num" id="stat-entries">–</div><div class="stat-label">Entries</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-participants">–</div><div class="stat-label">Participants</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-dreams">–</div><div class="stat-label">Dreams logged</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-ai">–</div><div class="stat-label">AI tagged</div></div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="charts-row">
+      <div class="chart-section">
+        <div class="chart-title">Sleep Quality (1–5)</div>
+        <div id="chart-sleep-q"></div>
+      </div>
+      <div class="chart-section">
+        <div class="chart-title">Stress Level (1–5)</div>
+        <div id="chart-stress"></div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-section">
+        <div class="chart-title">Bedtime</div>
+        <div id="chart-bedtime"></div>
+      </div>
+      <div class="chart-section">
+        <div class="chart-title">Dream tone (AI)</div>
+        <div id="chart-tone"></div>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-title">Top dream themes (AI tagged)</div>
+      <div id="chart-themes"></div>
+    </div>
+
+    <!-- Participants -->
+    <div class="section-title">Participants</div>
+    <div class="pid-grid" id="pid-grid"></div>
+
+    <!-- Dreams -->
+    <div class="section-title">Dream Entries</div>
+    <div id="dream-list"></div>
+  </div>
+
+</div>
+
+<script>
+  let adminPassword = '';
+  let allData = [];
+  let currentWave = 'all';
+
+  async function login() {
+    adminPassword = document.getElementById('pwd-input').value;
+    if (!adminPassword) {
+      document.getElementById('login-err').textContent = 'Incorrect password.';
+      return;
+    }
+    const loaded = await loadData(true);
+    if (loaded) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+    }
+  }
+
+  async function loadData(isLoginAttempt) {
+    try {
+      const res = await fetch('/api/admin-data', { headers: { 'x-admin-pwd': adminPassword } });
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error);
+      allData = result.data || [];
+      render(filtered());
+      document.getElementById('last-updated').textContent =
+        'Updated: ' + new Date().toLocaleTimeString() + ' · ' + allData.length + ' total entries';
+      return true;
+    } catch (e) {
+      if (isLoginAttempt) {
+        document.getElementById('login-err').textContent = e.message === 'Unauthorized'
+          ? 'Incorrect password.'
+          : 'Error: ' + e.message;
+      } else {
+        document.getElementById('last-updated').textContent = 'Error: ' + e.message;
+      }
+      return false;
+    }
+  }
+
+  function setWave(w) {
+    currentWave = w;
+    document.querySelectorAll('.wave-btn').forEach((b, i) => {
+      b.classList.toggle('active', ['all','baseline','high_pressure'][i] === w);
+    });
+    render(filtered());
+  }
+
+  function filtered() {
+    if (currentWave === 'all') return allData;
+    return allData.filter(r => r.wave === currentWave);
+  }
+
+  function render(data) {
+    const participants = [...new Set(data.map(r => r.participant_id))];
+    const dreams = data.filter(r => r.dream_text_raw);
+    const aiTagged = data.filter(r => r.ai_processed);
+
+    document.getElementById('stat-entries').textContent = data.length;
+    document.getElementById('stat-participants').textContent = participants.length;
+    document.getElementById('stat-dreams').textContent = dreams.length;
+    document.getElementById('stat-ai').textContent = aiTagged.length;
+
+    // Sleep quality 1-5
+    renderScale('chart-sleep-q', data, 'sleep_quality', 5);
+    renderScale('chart-stress', data, 'stress_level', 5);
+
+    // Bedtime
+    renderExact('chart-bedtime', data, 'bedtime', [
+      ['Before 10PM', ['Before 10PM / 10点前']],
+      ['10–11PM',     ['10PM-11PM / 10-11点']],
+      ['11PM–12AM',   ['11PM-12AM / 11-12点']],
+      ['12AM–1AM',    ['12AM-1AM / 12-1点']],
+      ['After 1AM',   ['After 1AM / 1点后']],
+    ]);
+
+    // Dream tone
+    renderExact('chart-tone', aiTagged, 'ai_tone', [
+      ['Positive', ['positive']],
+      ['Neutral',  ['neutral']],
+      ['Negative', ['negative']],
+    ]);
+
+    // Dream themes (multi)
+    const themeCounts = {};
+    aiTagged.forEach(r => {
+      (r.ai_themes || []).forEach(t => { if (t && t !== 'none') themeCounts[t] = (themeCounts[t]||0)+1; });
+    });
+    const themesSorted = Object.entries(themeCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const themeMax = (themesSorted[0] && themesSorted[0][1]) || 1;
+    document.getElementById('chart-themes').innerHTML = themesSorted.length
+      ? themesSorted.map(([t,c]) => `
+          <div class="bar-row">
+            <div class="bar-label">${t}</div>
+            <div class="bar-wrap"><div class="bar-fill" style="width:${(c/themeMax*100).toFixed(0)}%"></div></div>
+            <div class="bar-count">${c}</div>
+          </div>`).join('')
+      : '<p style="color:#444;font-size:12px">No AI-tagged dreams yet.</p>';
+
+    // Participants grid
+    const pidMap = {};
+    data.forEach(r => {
+      if (!pidMap[r.participant_id]) pidMap[r.participant_id] = { count: 0, last: r.submitted_at };
+      pidMap[r.participant_id].count++;
+      if (r.submitted_at > pidMap[r.participant_id].last) pidMap[r.participant_id].last = r.submitted_at;
+    });
+    document.getElementById('pid-grid').innerHTML = Object.entries(pidMap)
+      .sort((a,b)=>b[1].count-a[1].count)
+      .map(([pid,info]) => `
+        <div class="pid-card">
+          <div class="pid-id">${esc(pid)}</div>
+          <div class="pid-count">${info.count} entries</div>
+          <div class="pid-last">Last: ${new Date(info.last).toLocaleDateString()}</div>
+        </div>`).join('') || '<p style="color:#444;font-size:12px">No participants yet.</p>';
+
+    // Dream list
+    document.getElementById('dream-list').innerHTML = dreams.slice(0,30).map(r => {
+      const toneClass = r.ai_tone === 'positive' ? 'tone-pos' : r.ai_tone === 'negative' ? 'tone-neg' : 'tone-neu';
+      const themes = (r.ai_themes||[]).map(t=>`<span class="tag">${t}</span>`).join('');
+      const emotions = (r.ai_emotions||[]).map(e=>`<span class="tag">${e}</span>`).join('');
+      const tone = r.ai_tone ? `<span class="tag ${toneClass}">${r.ai_tone}</span>` : '';
+      return `
+        <div class="dream-card">
+          <div class="dream-meta">${r.participant_id} · ${r.entry_date} · ${r.wave||'–'} · ${r.lang||'–'}</div>
+          <div class="dream-text">${esc(r.dream_text_raw)}</div>
+          ${r.ai_processed ? `<div>${themes}${emotions}${tone}</div>` : '<div style="color:#444;font-size:11px">Not AI-tagged</div>'}
+        </div>`;
+    }).join('') || '<p style="color:#444;font-size:12px">No dreams logged yet.</p>';
+  }
+
+  function renderScale(id, data, field, max) {
+    const counts = {};
+    for (let i=1;i<=max;i++) counts[i]=0;
+    data.forEach(r => { if (r[field] >= 1 && r[field] <= max) counts[r[field]]++; });
+    const m = Math.max(...Object.values(counts), 1);
+    document.getElementById(id).innerHTML = Object.entries(counts).map(([v,c]) => `
+      <div class="bar-row">
+        <div class="bar-label" style="width:30px">${v}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${(c/m*100).toFixed(0)}%"></div></div>
+        <div class="bar-count">${c}</div>
+      </div>`).join('');
+  }
+
+  function renderExact(id, data, field, mapping) {
+    const counts = {};
+    mapping.forEach(([label]) => counts[label]=0);
+    data.forEach(r => {
+      if (!r[field]) return;
+      mapping.forEach(([label, vals]) => { if (vals.includes(r[field])) counts[label]++; });
+    });
+    const m = Math.max(...Object.values(counts), 1);
+    document.getElementById(id).innerHTML = mapping.map(([label]) => `
+      <div class="bar-row">
+        <div class="bar-label">${label}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${(counts[label]/m*100).toFixed(0)}%"></div></div>
+        <div class="bar-count">${counts[label]}</div>
+      </div>`).join('');
+  }
+
+  function exportCSV() {
+    if (!allData.length) { alert('No data yet.'); return; }
+    const keys = ['participant_id','entry_date','wave','lang','submitted_at',
+      'bedtime','wake_time','sleep_quality','sleep_latency','night_awakenings',
+      'unresolved_mind','dream_recall','dream_text_raw',
+      'stress_level','stress_causes','stress_vs_avg','mental_health',
+      'ai_themes','ai_emotions','ai_tone','ai_confidence','ai_processed','manual_review'];
+    const rows = [keys.join(',')];
+    allData.forEach(r => {
+      rows.push(keys.map(k => {
+        const v = Array.isArray(r[k]) ? r[k].join(' | ') : (r[k] == null ? '' : r[k]);
+        return `"${String(v).replace(/"/g,'""')}"`;
+      }).join(','));
+    });
+    const blob = new Blob(['\uFEFF'+rows.join('\n')], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `dreamtell_daily_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
