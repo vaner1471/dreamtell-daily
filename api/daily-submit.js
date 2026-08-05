@@ -230,6 +230,6 @@ function createHandler(options) {
     safeErrorReason,
     tagDream
   };
-  module.exports = handler;
+  module.exports = handler;}
 
 
