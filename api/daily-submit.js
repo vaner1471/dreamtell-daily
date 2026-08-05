@@ -220,16 +220,17 @@ function createHandler(options) {
     }
 
     return res.status(200).json({ success: true });
-  };
+  }; 
+}
 
-  const handler = createHandler();
-  handler._test = {
-    createHandler,
-    failedTagging,
-    safeDatabaseErrorCode,
-    safeErrorReason,
-    tagDream
-  };
-  module.exports = handler;}
+const handler = createHandler();
 
+handler._test = {
+  createHandler,
+  failedTagging,
+  safeDatabaseErrorCode,
+  safeErrorReason,
+  tagDream
+};
 
+module.exports = handler;
