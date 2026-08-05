@@ -200,32 +200,34 @@ function createHandler(options) {
       return res.status(500).json({ success: false, error: 'Server configuration error' });
     }
 
-   try {
-  const { error } = await supabase.from('daily_entries').insert(row);
-  
-  if (error) {
-    console.error('Supabase daily_entries insert ERROR DETAILS:', JSON.stringify(error, null, 2));
+    try {
+      const { error } = await supabase.from('daily_entries').insert(row);
+      
+      if (error) {
+        console.error('Supabase daily_entries insert ERROR DETAILS:', JSON.stringify(error, null, 2));
 
-    if (error.code === '23505') {
-      return res.status(409).json({ success: false, code: 'already_submitted' });
+        if (error.code === '23505') {
+          return res.status(409).json({ success: false, code: 'already_submitted' });
+        }
+        
+        return res.status(500).json({ success: false, error: 'Submission failed', details: error.message });
+      }
+    } catch (error) {
+      console.error('Supabase daily_entries insert request failed:', {
+        code: safeDatabaseErrorCode(error)
+      });
+      return res.status(500).json({ success: false, error: 'Submission failed' });
     }
-    
-    return res.status(500).json({ success: false, error: 'Submission failed', details: error.message });
-  }
-} catch (error) {
-  console.error('Supabase daily_entries insert request failed:', {
-    code: safeDatabaseErrorCode(error)
-  });
-  return res.status(500).json({ success: false, error: 'Submission failed' });
-}
 
-return res.status(200).json({ success: true });
-const handler = createHandler();
-handler._test = {
-  createHandler,
-  failedTagging,
-  safeDatabaseErrorCode,
-  safeErrorReason,
-  tagDream
-};
-module.exports = handler;
+    return res.status(200).json({ success: true });
+  };
+
+  const handler = createHandler();
+  handler._test = {
+    createHandler,
+    failedTagging,
+    safeDatabaseErrorCode,
+    safeErrorReason,
+    tagDream
+  };
+  module.exports = handler;
